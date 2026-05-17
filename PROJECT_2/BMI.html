@@ -1,0 +1,46 @@
+
+
+<!--DOCTYPE html-->
+<html lang="en">
+<head>
+    <title>BMI Calculator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="BMI.css">
+</head>
+<body>
+ <div class ="container">
+    
+<h1>BMI Calculator By Virk</h1>
+
+
+
+</div>
+<div class="container2">
+
+    <label for="weight">Weight (kg):</label><!--for means the label is for the input with id "weight"-->
+<!--we cant write id = "weight" in label because it is not an input element-->
+<input type="number" id="weight" placeholder="Enter your weight in kg">
+
+<label for ="height">height</label>
+<input type="number" id="height" placeholder="Enter your height in inches">
+
+
+
+
+<button id = "button">Calculate BMI</button>
+
+
+</div>
+<!--we dont need div result as we will add  the result using innerHTML in the js file
+<div id ="result">  
+    Bmi will be displayed here
+</div>
+-->
+
+<script src="BMI.js"></script>
+
+
+
+</body>
+</html>

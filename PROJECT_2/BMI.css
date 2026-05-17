@@ -1,0 +1,58 @@
+.container{
+    color:black;
+    padding:5px;
+    background-color:lightgrey;
+    border-radius: 10px;
+    /*to make text centered*/
+    text-align:center;
+    font-size: 20px;
+    font-family:cursive;
+}
+.container2{
+    padding:10px;
+    background-color:lightblue;
+    border-radius:10px
+}
+#weight{
+    border-radius:15px;
+    padding:10px;
+    margin-top:10px;
+    margin-bottom:10px;
+    margin-left:10px;
+    margin-right:10px;
+    }
+input::placeholder{
+    color:grey;
+    font-family:cursive;
+}
+#height{
+    border-radius:15px;
+    padding:10px;
+    margin-top:10px;
+    margin-bottom:10px;
+    margin-left:10px;
+    margin-right:10px;
+    width:200px;
+    }
+#button{
+    background-color:black;
+    color:white;
+    border-radius:10px;
+    padding:10px;
+    font-family:cursive;
+    margin-top:10px;
+    margin-bottom:10px;
+    margin-left:10px;
+    margin-right:10px;
+}
+.result{
+    color:black;
+    padding:10px;
+    background-color:lightgreen;
+    border-radius:10px;
+    font-family:cursive;
+    margin-top:10px;
+    margin-bottom:10px;
+    margin-left:10px;
+    margin-right:10px;
+}
