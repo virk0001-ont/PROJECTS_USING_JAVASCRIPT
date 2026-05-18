@@ -94,8 +94,8 @@ const images = document.querySelectorAll('.images img');
 images.forEach(function(image) {
   image.addEventListener('click', function() {
     alert('You clicked');
-//   });
-// });
+  });
+  });
 //this will print alert when we click on any of the images.
 
 //but if we call the event listener on the child also after that it will also print the alert because of event bubbling, 
@@ -120,3 +120,82 @@ images.addEventListener('click', function() {
 }, true);
 //this will print first you clicked then you clicked on owl because we have capturing enabled and
 // ,  the event is first captured by the ul element and then it captures down to the owl image.
+
+//stoppropagation
+//stopPropagation method is used to stop the event from bubbling up to the parent elements.
+//we can use it like this
+
+const images = document.querySelector('.owl');
+images.addEventListener('click', function(e) {
+  e.stopPropagation();
+  alert('You clicked on owl');
+});
+//this will print only you clicked on owl when we click on the owl image because 
+// we have stopped the event from bubbling up to the parent elements.
+
+
+
+
+
+//preventDefault
+//preventDefault is a method of the event object that prevents the default action of the event.
+//for example, if we have a link like this
+//<a href="https://www.google.com" id="mylink">Go to Google</a>
+//and we want to prevent the default action of the link, which is to navigate to google.com, then we can do it like this
+
+const link = document.getElementById('mylink');
+link.addEventListener('click', function(e) {
+  e.preventDefault();
+  alert('You clicked on the link');
+});
+//this will prevent the default action of the link and it will print only you clicked on the link when we click on the link.
+
+
+
+//parentNode
+//parentNode is a property of the event object that returns the parent node of the target element.
+//for example, if we have a ul with class images and we click on any of the images, 
+// then we can get the parent node of the image like this
+
+document.querySelector('#images').addEventListener('click',function(e){
+  console.log(e.target.parentNode);
+
+})
+
+//method 1
+ //and we can remove the parent node of the image like this
+document.querySelector('#images').addEventListener('click',function(e){
+  console.log(e.target.parentNode);
+  let removeIt = e.target.parentNode; //this will get the parent node of the target element
+                                    //  which is the li element and we can remove it like this
+  removeIt.remove();
+
+
+})
+
+//and
+//method 2
+document.querySelector('#images').addEventListener('click',function(e){
+  console.log(e.target.parentNode);
+  let removeIt = e.target.parentNode; //this will get the parent node of the target element
+  removeIt.parentNode.removeChild(removeIt); 
+  
+  //this will remove the parent node of the target element which is the li element
+})
+
+//differnece between method 1 and method 2 is that 
+// in method 1 we are using the remove() method which is a
+//  modern method and it is not supported in older browsers, 
+// while in method 2 we are using the removeChild() 
+// method which is supported in all browsers.
+
+//and
+//When you click the image, e.target is the img,
+//  and its parentNode is the li,
+//  so removeIt becomes the li.
+//  In the first method, remove() directly deletes the li.
+//  In the second method, removeIt.parentNode gets the ul,
+//  and removeChild(removeIt) means “hey ul, remove this li child.” 
+// Both do the same thing — they remove the li.
+
+ 
