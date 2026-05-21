@@ -1,0 +1,18 @@
+//fetch is a new thing
+// we used to send req on http using XMLHttpRequest
+// fetch is a new API that allows us to send req on http using promises
+// fetch is a global function that is available in the browser
+
+//heavily ajax based
+//ajax means asynchronous javascript and xml
+//it is a technique that allows us to send req on http without reloading the page
+
+//we have 5 states
+
+//state 1: request not initialized or               unsent
+//state 2: server connection established or         opened
+//state 3: request received or                      sent
+//state 4: processing request or                    loading
+//state 5: request finished and response is ready   or done
+
+

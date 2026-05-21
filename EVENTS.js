@@ -198,4 +198,28 @@ document.querySelector('#images').addEventListener('click',function(e){
 //  and removeChild(removeIt) means “hey ul, remove this li child.” 
 // Both do the same thing — they remove the li.
 
+ //events spillover
+ //like in this , cicking is removing li element,
+   
+ document.querySelector('#images').addEventListener('click',function(e){
+  console.log(e.target.parentNode);
+  let removeIt = e.target.parentNode; //this will get the parent node of the target element
+  removeIt.parentNode.removeChild(removeIt); };
+ 
+  //  but if we click on the space between the images, then it will remove the ul element because of event bubbling,
+ // so to prevent that we can check if the target element is an image or not like this
+
+
+
+document.querySelector('#images').addEventListener('click',function(e){
+  if(e.target.tagName === 'IMG') {
+    console.log(e.target.parentNode);
+    let removeIt = e.target.parentNode; //this will get the parent node of the target element
+    removeIt.parentNode.removeChild(removeIt); 
+  }
+  //this will check if the target element is an image or not, 
+  // and if it is an image then it will remove the parent node of the image which is the li element, 
+  // otherwise it will do nothing when we click on the space between the images.
+})
+
  
