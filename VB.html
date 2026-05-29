@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoiceNotes AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2535;
+      --card: #1a2033;
+      --card2: #212840;
+      --border: #2a3350;
+      --text: #e8ecf4;
+      --text2: #8892aa;
+      --primary: #6c63ff;
+      --primary-glow: rgba(108,99,255,0.3);
+      --accent: #2dd4bf;
+      --accent-glow: rgba(45,212,191,0.25);
+      --red: #ef4444;
+      --red-glow: rgba(239,68,68,0.3);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo-text p  { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .header-stats { display: flex; gap: 16px; }
+    .stat { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-primary { background: var(--primary); }
+    .dot-accent  { background: var(--accent); }
+
+    /* ─── LAYOUT ─── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 28px;
+    }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+    .col { display: flex; flex-direction: column; gap: 24px; }
+
+    /* ─── CARD ─── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 20px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+    .card-title svg { width: 16px; height: 16px; }
+    .card-body { padding: 20px; }
+
+    /* ─── RECORDER CARD ─── */
+    .recorder-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 24px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 20px;
+      position: relative; overflow: hidden;
+    }
+    .recorder-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .rec-status {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--text2); transition: color .3s;
+    }
+    .rec-status.recording { color: var(--red); animation: blink 1s infinite; }
+    .rec-status.saving    { color: var(--accent); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .timer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 40px; font-weight: 500;
+      letter-spacing: 3px; color: var(--text);
+    }
+
+    /* ─── WAVEFORM ─── */
+    .waveform { display: flex; align-items: center; justify-content: center; gap: 4px; height: 56px; width: 100%; }
+    .wave-bar {
+      width: 4px; border-radius: 99px;
+      background: var(--primary);
+      height: 4px; opacity: .25; transition: opacity .3s;
+    }
+    .waveform.active .wave-bar {
+      opacity: .9;
+      animation: waveBounce var(--dur, .8s) ease-in-out infinite alternate;
+    }
+    @keyframes waveBounce { from { height: 4px; } to { height: var(--h, 28px); } }
+
+    /* ─── RECORD BUTTON ─── */
+    .record-btn-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    .pulse-ring {
+      position: absolute; width: 96px; height: 96px;
+      border-radius: 50%; background: var(--red-glow); opacity: 0; pointer-events: none;
+    }
+    .recording .pulse-ring { animation: pulseRing 1.8s ease-out infinite; }
+    @keyframes pulseRing { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.8);opacity:0} }
+    .record-btn {
+      position: relative; z-index: 2;
+      width: 80px; height: 80px; border-radius: 50%;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      box-shadow: 0 8px 32px var(--primary-glow);
+      transition: transform .15s, background .3s, box-shadow .3s;
+    }
+    .record-btn:hover { transform: scale(1.06); }
+    .record-btn:active { transform: scale(.94); }
+    .record-btn.recording {
+      background: linear-gradient(135deg, var(--red), #dc2626);
+      box-shadow: 0 8px 32px var(--red-glow);
+    }
+    .record-btn svg { width: 32px; height: 32px; fill: #fff; }
+    .rec-hint { font-size: 12px; color: var(--text2); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 16px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      color: #fff; box-shadow: 0 4px 16px var(--primary-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-accent {
+      background: linear-gradient(135deg, var(--accent), #14b8a6);
+      color: #0f1117; box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn-accent:hover { transform: translateY(-1px); }
+    .btn-accent:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-icon {
+      padding: 6px; background: transparent; border: none;
+      cursor: pointer; color: var(--text2); border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .2s, color .2s;
+    }
+    .btn-icon:hover { background: var(--bg3); color: var(--text); }
+    .btn-icon svg { width: 15px; height: 15px; }
+    .btn-icon.danger:hover { color: var(--red); }
+
+    /* ─── GENERATE ROW ─── */
+    .generate-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .generate-info p:first-child { font-size: 14px; font-weight: 600; }
+    .generate-info p:last-child  { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    /* ─── RECORDINGS LIST ─── */
+    .recordings-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
+    .recordings-list::-webkit-scrollbar { width: 4px; }
+    .recordings-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .rec-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 10px; transition: background .2s;
+    }
+    .rec-card:hover { background: var(--card2); }
+    .rec-card input[type="checkbox"] { margin-top: 4px; width: 15px; height: 15px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+    .rec-info { flex: 1; min-width: 0; }
+    .rec-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rec-meta { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+    .rec-transcript { font-size: 11px; color: var(--text2); margin-top: 6px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 600; letter-spacing: .4px; }
+    .badge-recorded     { background: rgba(255,255,255,.08); color: var(--text2); }
+    .badge-transcribing { background: rgba(108,99,255,.2); color: var(--primary); }
+    .badge-transcribed  { background: rgba(45,212,191,.15); color: var(--accent); }
+    .badge-error        { background: rgba(239,68,68,.15); color: var(--red); }
+    .rec-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+    /* ─── NOTES LIST ─── */
+    .notes-list { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px; }
+    .notes-list::-webkit-scrollbar { width: 4px; }
+    .notes-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .note-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .note-head { padding: 12px 14px; display: flex; align-items: flex-start; gap: 8px; }
+    .note-head-icon { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+    .note-head-info { flex: 1; min-width: 0; }
+    .note-title { font-size: 13px; font-weight: 600; }
+    .note-date  { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .note-head-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .note-toggle {
+      width: 100%; background: none; border: none; border-top: 1px solid var(--border);
+      cursor: pointer; padding: 8px 14px; font-size: 11px; font-weight: 500; color: var(--text2);
+      display: flex; align-items: center; justify-content: center; gap: 5px; transition: background .2s;
+    }
+    .note-toggle:hover { background: var(--card2); color: var(--text); }
+    .note-content {
+      display: none; padding: 14px 16px; border-top: 1px solid var(--border);
+      font-size: 13px; line-height: 1.75; color: var(--text);
+    }
+    .note-content.visible { display: block; }
+    .note-content h1,.note-content h2,.note-content h3 { font-size: 13px; font-weight: 700; margin: 10px 0 4px; }
+    .note-content ul,.note-content ol { padding-left: 18px; }
+    .note-content li { margin-bottom: 3px; }
+    .note-content strong { font-weight: 600; }
+
+    /* ─── EMPTY STATES ─── */
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 10px; text-align: center; }
+    .empty-icon { width: 56px; height: 56px; background: var(--bg3); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 6px; }
+    .empty p:first-of-type { font-size: 14px; font-weight: 500; color: var(--text2); }
+    .empty p:last-of-type  { font-size: 12px; color: var(--text2); opacity: .7; }
+
+    /* ─── TOAST ─── */
+    #toast-container { position: fixed; bottom: 28px; right: 28px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none; }
+    .toast {
+      background: var(--card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      font-size: 13px; min-width: 240px; max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      animation: slideUp .3s ease; pointer-events: auto;
+    }
+    .toast strong { display: block; font-weight: 600; margin-bottom: 2px; }
+    .toast span   { font-size: 12px; color: var(--text2); }
+    .toast.error   { border-color: var(--red); }
+    .toast.success { border-color: var(--accent); }
+    @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    /* ─── SPINNER ─── */
+    .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .select-all-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 12px; color: var(--text2); font-family: 'Inter', sans-serif;
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px; border-radius: 6px; transition: background .2s;
+    }
+    .select-all-btn:hover { background: var(--bg3); color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     ⚙️  CONFIGURATION — ADD YOUR API KEY HERE
+════════════════════════════════════════════ -->
+<script>
+  // 👇 Paste your Google Gemini API key between the quotes below
+  const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+
+  // Model to use — you can change to "gemini-1.5-pro" for higher quality
+  const GEMINI_MODEL = "gemini-1.5-flash";
+</script>
+<!-- ════════════════════════════════════════════ -->
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎙️</div>
+    <div class="logo-text">
+      <h1>VoiceNotes AI</h1>
+      <p>Record · Transcribe · Summarize</p>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="dot dot-accent"></div><span id="rec-count">0 recordings</span></div>
+    <div class="stat"><div class="dot dot-primary"></div><span id="note-count">0 notes</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT COLUMN -->
+  <div class="col">
+
+    <!-- Recorder -->
+    <div class="recorder-card" id="recorder-card">
+      <div class="rec-status" id="rec-status">Ready to Record</div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="waveform" id="waveform"></div>
+      <div class="record-btn-wrap" id="record-btn-wrap">
+        <div class="pulse-ring" id="pulse-ring"></div>
+        <button class="record-btn" id="record-btn" onclick="toggleRecording()">
+          <svg id="btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 14.93A7.001 7.001 0 0 1 5 9H3a9 9 0 0 0 8 8.94V20H8v2h8v-2h-3v-2.06A9 9 0 0 0 21 9h-2a7 7 0 0 1-5.5 6.93z"/>
+          </svg>
+        </button>
+      </div>
+      <p class="rec-hint" id="rec-hint">Tap to start recording</p>
+    </div>
+
+    <!-- Recordings List -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19V6l12-3v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="15" r="3"/></svg>
+          Recordings
+        </div>
+        <button class="select-all-btn" onclick="toggleSelectAll()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Select All
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="recordings-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col">
+
+    <!-- Generate Card -->
+    <div class="card">
+      <div class="card-body">
+        <div class="generate-row">
+          <div class="generate-info">
+            <p>Generate Notes</p>
+            <p id="gen-hint">Select recordings to summarize</p>
+          </div>
+          <button class="btn btn-accent" id="gen-btn" onclick="generateNotes()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            Generate Notes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Generated Notes
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="notes-list"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   VALIDATE API KEY ON LOAD
+═══════════════════════════════════════════════ */
+if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+  document.addEventListener('DOMContentLoaded', () => {
+    showToast('⚠️ No API Key', 'Open the HTML file and set your GEMINI_API_KEY at the top.', 'error');
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let recordings  = JSON.parse(localStorage.getItem('vn_recordings') || '[]');
+let notes       = JSON.parse(localStorage.getItem('vn_notes') || '[]');
+let selectedIds = [];
+
+let mediaRecorder = null;
+let audioChunks   = [];
+let isRecording   = false;
+let timerInterval = null;
+let elapsed       = 0;
+
+/* ═══════════════════════════════════════════════
+   PERSIST
+═══════════════════════════════════════════════ */
+function save() {
+  localStorage.setItem('vn_recordings', JSON.stringify(recordings));
+  localStorage.setItem('vn_notes',      JSON.stringify(notes));
+}
+
+/* ═══════════════════════════════════════════════
+   WAVEFORM INIT
+═══════════════════════════════════════════════ */
+(function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  for (let i = 0; i < 28; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.style.setProperty('--dur', (0.4 + Math.random() * 0.6) + 's');
+    bar.style.setProperty('--h',   (10 + Math.random() * 34) + 'px');
+    bar.style.animationDelay = (i * 0.04) + 's';
+    wf.appendChild(bar);
+  }
+})();
+
+/* ═══════════════════════════════════════════════
+   RECORDING
+═══════════════════════════════════════════════ */
+async function toggleRecording() {
+  if (isRecording) stopRecording();
+  else await startRecording();
+}
+
+async function startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+  audioChunks   = [];
+  elapsed       = 0;
+
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = handleRecordingStop;
+  mediaRecorder.start(250);
+
+  isRecording = true;
+  setRecordingUI(true);
+
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = m + ':' + s;
+  }, 1000);
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  clearInterval(timerInterval);
+  isRecording = false;
+  setRecordingUI(false);
+}
+
+function setRecordingUI(active) {
+  const btn  = document.getElementById('record-btn');
+  const icon = document.getElementById('btn-icon');
+  const wf   = document.getElementById('waveform');
+  const st   = document.getElementById('rec-status');
+  const hint = document.getElementById('rec-hint');
+  const wrap = document.getElementById('record-btn-wrap');
+
+  if (active) {
+    btn.classList.add('recording');
+    wf.classList.add('active');
+    st.textContent = '● Recording';
+    st.className = 'rec-status recording';
+    hint.textContent = 'Tap to stop recording';
+    wrap.classList.add('recording');
+    icon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+  } else {
+    btn.classList.remove('recording');
+    wf.classList.remove('active');
+    st.textContent = 'Saving…';
+    st.className = 'rec-status saving';
+    hint.textContent = 'Tap to start recording';
+    wrap.classList.remove('recording');
+    icon.innerHTML = '<path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 14.93A7.001 7.001 0 0 1 5 9H3a9 9 0 0 0 8 8.94V20H8v2h8v-2h-3v-2.06A9 9 0 0 0 21 9h-2a7 7 0 0 1-5.5 6.93z"/>';
+    document.getElementById('timer').textContent = '00:00';
+  }
+}
+
+function handleRecordingStop() {
+  const blob    = new Blob(audioChunks, { type: 'audio/webm' });
+  const duration = elapsed;
+
+  const rec = {
+    id:         'rec_' + Date.now(),
+    title:      'Recording – ' + new Date().toLocaleString(),
+    duration:   duration,
+    transcript: '',
+    status:     'recorded',
+    created_at: new Date().toISOString(),
+  };
+
+  window._blobs = window._blobs || {};
+  window._blobs[rec.id] = blob;
+
+  recordings.unshift(rec);
+  save();
+  renderRecordings();
+  updateStats();
+  showToast('Recording saved', duration + 's of audio saved.', 'success');
+
+  document.getElementById('rec-status').textContent = 'Ready to Record';
+  document.getElementById('rec-status').className   = 'rec-status';
+}
+
+/* ═══════════════════════════════════════════════
+   PLAYBACK
+═══════════════════════════════════════════════ */
+let currentAudio  = null;
+let currentPlayId = null;
+
+function togglePlay(id) {
+  if (currentPlayId === id && currentAudio) {
+    currentAudio.pause();
+    currentAudio = null; currentPlayId = null;
+    updatePlayButton(id, false);
+    return;
+  }
+  if (currentAudio) { currentAudio.pause(); updatePlayButton(currentPlayId, false); }
+
+  const blob = window._blobs && window._blobs[id];
+  if (!blob) { showToast('Not available', 'Re-record — blobs are lost on page reload.', 'error'); return; }
+
+  const audio = new Audio(URL.createObjectURL(blob));
+  audio.onended = () => { currentAudio = null; currentPlayId = null; updatePlayButton(id, false); };
+  audio.play();
+  currentAudio  = audio;
+  currentPlayId = id;
+  updatePlayButton(id, true);
+}
+
+function updatePlayButton(id, playing) {
+  const btn = document.querySelector(`[data-play="${id}"]`);
+  if (!btn) return;
+  btn.innerHTML = playing
+    ? '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+}
+
+/* ═══════════════════════════════════════════════
+   TRANSCRIBE  (Gemini API)
+═══════════════════════════════════════════════ */
+async function transcribe(id) {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+    showToast('No API Key', 'Set GEMINI_API_KEY at the top of the file.', 'error');
+    return;
+  }
+
+  const rec  = recordings.find(r => r.id === id);
+  const blob = window._blobs && window._blobs[id];
+  if (!rec || !blob) { showToast('Audio unavailable', 'Re-record this clip.', 'error'); return; }
+
+  rec.status = 'transcribing';
+  save(); renderRecordings();
+
+  const base64 = await blobToBase64(blob);
+
+  const body = {
+    contents: [{
+      parts: [
+        { text: 'Transcribe this audio recording accurately. Return only the transcription text, nothing else.' },
+        { inline_data: { mime_type: 'audio/webm', data: base64.split(',')[1] } }
+      ]
+    }]
+  };
+
+  const res  = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+  const data = await res.json();
+
+  if (data.error) {
+    rec.status = 'error';
+    save(); renderRecordings();
+    showToast('Transcription failed', data.error.message, 'error');
+    return;
+  }
+
+  rec.transcript = data.candidates?.[0]?.content?.parts?.[0]?.text || '(empty)';
+  rec.status     = 'transcribed';
+  save(); renderRecordings();
+  showToast('Transcription complete', 'Audio transcribed successfully.', 'success');
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   DELETE RECORDING
+═══════════════════════════════════════════════ */
+function deleteRecording(id) {
+  recordings  = recordings.filter(r => r.id !== id);
+  selectedIds = selectedIds.filter(x => x !== id);
+  if (window._blobs) delete window._blobs[id];
+  save(); renderRecordings(); updateStats(); updateGenerateBtn();
+}
+
+/* ═══════════════════════════════════════════════
+   SELECT
+═══════════════════════════════════════════════ */
+function toggleSelect(id) {
+  selectedIds = selectedIds.includes(id)
+    ? selectedIds.filter(x => x !== id)
+    : [...selectedIds, id];
+  updateGenerateBtn();
+}
+
+function toggleSelectAll() {
+  selectedIds = selectedIds.length === recordings.length ? [] : recordings.map(r => r.id);
+  renderRecordings(); updateGenerateBtn();
+}
+
+function updateGenerateBtn() {
+  const btn  = document.getElementById('gen-btn');
+  const hint = document.getElementById('gen-hint');
+  if (selectedIds.length > 0) {
+    btn.disabled     = false;
+    hint.textContent = selectedIds.length + ' recording' + (selectedIds.length > 1 ? 's' : '') + ' selected';
+  } else {
+    btn.disabled     = true;
+    hint.textContent = 'Select recordings to summarize';
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   GENERATE NOTES  (Gemini API)
+═══════════════════════════════════════════════ */
+async function generateNotes() {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+    showToast('No API Key', 'Set GEMINI_API_KEY at the top of the file.', 'error');
+    return;
+  }
+
+  const selected    = recordings.filter(r => selectedIds.includes(r.id));
+  const transcripts = selected.map(r => r.transcript).filter(Boolean);
+
+  if (!transcripts.length) {
+    showToast('No transcripts', 'Transcribe selected recordings first.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  btn.disabled  = true;
+
+  const body = {
+    contents: [{
+      parts: [{
+        text: `You are an expert note-taker. Given these audio transcriptions, create comprehensive well-organized notes.
+
+Instructions:
+- First line must be: TITLE: <a short descriptive title>
+- Then write notes in markdown (use ## headers, bullet points, **bold**)
+- Summarize key points, decisions, and action items
+- Be concise yet thorough
+
+Transcriptions:
+${transcripts.join('\n\n---\n\n')}`
+      }]
+    }]
+  };
+
+  const res  = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+  const data = await res.json();
+
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Generate Notes';
+  btn.disabled  = false;
+
+  if (data.error) { showToast('Error', data.error.message, 'error'); return; }
+
+  const raw   = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const match = raw.match(/TITLE:\s*(.+)/);
+  const title   = match ? match[1].trim() : 'Notes – ' + new Date().toLocaleString();
+  const content = raw.replace(/TITLE:.+\n?/, '').trim();
+
+  notes.unshift({
+    id:            'note_' + Date.now(),
+    title,
+    content,
+    recording_ids: [...selectedIds],
+    created_at:    new Date().toISOString(),
+  });
+
+  selectedIds = [];
+  save(); renderRecordings(); renderNotes(); updateStats(); updateGenerateBtn();
+  showToast('Notes generated!', 'Your summary is ready.', 'success');
+}
+
+/* ═══════════════════════════════════════════════
+   NOTE ACTIONS
+═══════════════════════════════════════════════ */
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  save(); renderNotes(); updateStats();
+}
+
+function toggleNote(id) {
+  const el  = document.getElementById('note-content-' + id);
+  const btn = document.getElementById('note-toggle-' + id);
+  const open = el.classList.toggle('visible');
+  btn.textContent = open ? '▴ Collapse' : '▾ Expand';
+}
+
+function copyNote(id) {
+  const note = notes.find(n => n.id === id);
+  if (note) navigator.clipboard.writeText(note.content);
+  showToast('Copied', 'Note content copied to clipboard.', 'success');
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER RECORDINGS
+═══════════════════════════════════════════════ */
+function renderRecordings() {
+  const container = document.getElementById('recordings-list');
+
+  if (!recordings.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🎤</div><p>No recordings yet</p><p>Start recording to see them here</p></div>`;
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'recordings-list';
+
+  recordings.forEach(rec => {
+    const m = Math.floor(rec.duration / 60);
+    const s = rec.duration % 60;
+    const dur = m + ':' + String(s).padStart(2, '0');
+
+    const div = document.createElement('div');
+    div.className = 'rec-card';
+    div.innerHTML = `
+      <input type="checkbox" ${selectedIds.includes(rec.id) ? 'checked' : ''} onchange="toggleSelect('${rec.id}')"/>
+      <div class="rec-info">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="rec-name">${rec.title}</span>
+          <span class="badge badge-${rec.status}">${rec.status}</span>
+        </div>
+        <div class="rec-meta">${dur} · ${new Date(rec.created_at).toLocaleDateString()}</div>
+        ${rec.transcript ? `<div class="rec-transcript">${rec.transcript}</div>` : ''}
+      </div>
+      <div class="rec-actions">
+        <button class="btn-icon" data-play="${rec.id}" onclick="togglePlay('${rec.id}')" title="Play">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        ${rec.status === 'recorded' ? `
+        <button class="btn-icon" onclick="transcribe('${rec.id}')" title="Transcribe" style="color:var(--primary)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>` : rec.status === 'transcribing' ? `
+        <button class="btn-icon" disabled>
+          <span class="spinner" style="border-top-color:var(--primary);border-color:rgba(108,99,255,.2);width:13px;height:13px;"></span>
+        </button>` : ''}
+        <button class="btn-icon danger" onclick="deleteRecording('${rec.id}')" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>`;
+    list.appendChild(div);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(list);
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER NOTES
+═══════════════════════════════════════════════ */
+function renderNotes() {
+  const container = document.getElementById('notes-list');
+
+  if (!notes.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><p>No notes generated yet</p><p>Select recordings and click Generate Notes</p></div>`;
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'notes-list';
+
+  notes.forEach(note => {
+    const div = document.createElement('div');
+    div.className = 'note-card';
+    div.innerHTML = `
+      <div class="note-head">
+        <span class="note-head-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </span>
+        <div class="note-head-info">
+          <div class="note-title">${note.title}</div>
+          <div class="note-date">${new Date(note.created_at).toLocaleString()} · ${note.recording_ids.length} recordings</div>
+        </div>
+        <div class="note-head-actions">
+          <button class="btn-icon" onclick="copyNote('${note.id}')" title="Copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="btn-icon danger" onclick="deleteNote('${note.id}')" title="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="note-toggle" id="note-toggle-${note.id}" onclick="toggleNote('${note.id}')">▾ Expand</button>
+      <div class="note-content" id="note-content-${note.id}">${markdownToHtml(note.content)}</div>`;
+    list.appendChild(div);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(list);
+}
+
+/* ═══════════════════════════════════════════════
+   MARKDOWN → HTML
+═══════════════════════════════════════════════ */
+function markdownToHtml(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
+    .replace(/\n{2,}/g,'<br/><br/>')
+    .replace(/\n/g,'<br/>');
+}
+
+/* ═══════════════════════════════════════════════
+   STATS + INIT
+═══════════════════════════════════════════════ */
+function updateStats() {
+  document.getElementById('rec-count').textContent  = recordings.length + ' recording' + (recordings.length !== 1 ? 's' : '');
+  document.getElementById('note-count').textContent = notes.length + ' note' + (notes.length !== 1 ? 's' : '');
+}
+
+function showToast(title, msg, type) {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.innerHTML = `<strong>${title}</strong><span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+renderRecordings();
+renderNotes();
+updateStats();
+</script>
+</body>
+</html>
